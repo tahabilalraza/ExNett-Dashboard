@@ -1,0 +1,32 @@
+{
+  "name": "exnett-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB -c cyan,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client",
+    "start": "npm run start -w server",
+    "seed": "npm run seed -w server",
+    "test": "npm run test -w server",
+    "db:start": "node scripts/start-mongo.js",
+    "setup:local": "node scripts/setup-local.js",
+    "test:browser": "node scripts/browser-smoke.js",
+    "admin:create": "npm run admin:create -w server",
+    "test:production": "node scripts/production-smoke.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "@playwright/test": "^1.56.0"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
+  }
+}

@@ -1,0 +1,17 @@
+import React, { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Plus, Pencil } from 'lucide-react';
+import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { useLookups } from '../hooks/useLookups';
+import { PageHeader, Button, Badge, EmptyState, DataTable, Spinner, date } from '../components/ui';
+import { ClientForm } from './Clients';
+import { ProjectForm, ErrorNotice, DeleteButton, useResource, displayName, canManage } from './Projects';
+export default function ClientDetail() {
+  const { id } = useParams(); const navigate = useNavigate(); const { user } = useAuth(); const { lookups = {} } = useLookups(); const { result, loading, error, reload } = useResource(`/clients/${id}`); const [editing, setEditing] = useState(false); const [project, setProject] = useState(null);
+  const client = result?.data; const projects = result?.projects || [];
+  if (loading && !client) return <Spinner />;
+  if (!client) return <div className="page-stack"><Link to="/clients">← Clients</Link><ErrorNotice error={error} retry={reload} /><EmptyState title="Client unavailable" description="The client may have been archived or you may no longer have access." /></div>;
+  const columns = [{ key: 'projectName', label: 'Project', render: row => <Link to={`/projects/${row._id}`}>{row.projectName}</Link> }, { key: 'status', label: 'Status', render: row => <Badge>{row.status}</Badge> }, { key: 'owner', label: 'Owner', render: row => displayName(row.owner) || 'Unassigned' }, { key: 'priority', label: 'Priority' }, { key: 'deadline', label: 'Deadline', render: row => date(row.deadline) }];
+  return <div className="page-stack"><Link className="back-link" to="/clients"><ArrowLeft size={15} />Clients</Link><PageHeader title={client.clientName} description={client.clientId} action={<div className="toolbar"><Button variant="secondary" onClick={() => setEditing(true)}><Pencil size={15} />Edit</Button>{canManage(user) && <DeleteButton onDelete={async () => { await api.delete(`/clients/${id}`); navigate('/clients'); }} />}</div>} /><ErrorNotice error={error} retry={reload} /><div className="detail-grid"><div className="panel"><Badge>{client.status}</Badge><dl className="detail-list"><dt>Primary contact</dt><dd>{client.primaryContactName || '—'}</dd><dt>Email</dt><dd>{client.primaryContactEmail ? <a href={`mailto:${client.primaryContactEmail}`}>{client.primaryContactEmail}</a> : '—'}</dd><dt>Phone</dt><dd>{client.phone || '—'}</dd><dt>Created</dt><dd>{date(client.createdAt)}</dd></dl></div><div className="panel"><h2 className="section-title">Client notes</h2><p className="preserve-lines">{client.notes || 'No notes have been added.'}</p></div></div><div className="panel"><div className="toolbar section-toolbar"><h2 className="section-title">Projects ({projects.length})</h2><Button onClick={() => setProject({ client })}><Plus size={16} />Create project</Button></div>{projects.length ? <DataTable columns={columns} rows={projects} /> : <EmptyState title="No client projects yet" description="Create a project linked to this client." action={<Button onClick={() => setProject({ client })}>Create project</Button>} />}</div>{editing && <ClientForm client={client} onClose={() => setEditing(false)} onSaved={async () => { setEditing(false); await reload(); }} />}{project && <ProjectForm project={project} lookups={lookups} onClose={() => setProject(null)} onSaved={async () => { setProject(null); await reload(); }} />}</div>;
+}
